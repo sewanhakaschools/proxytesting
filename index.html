@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nova | Home</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #0b0b12;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 850px;
+      text-align: center;
+    }
+
+    .tag {
+      color: #a78bfa;
+      letter-spacing: 4px;
+      font-size: 12px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(42px, 8vw, 76px);
+      letter-spacing: -3px;
+      margin-bottom: 12px;
+    }
+
+    h1 span {
+      color: #a78bfa;
+    }
+
+    .subtitle {
+      color: #9999ad;
+      margin-bottom: 40px;
+    }
+
+    .clock {
+      font-size: 22px;
+      color: #c4b5fd;
+      margin-bottom: 32px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: #15151f;
+      border: 1px solid #252536;
+      padding: 22px;
+      border-radius: 16px;
+      text-decoration: none;
+      color: white;
+      transition: 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: #8b5cf6;
+      background: #1d1b2b;
+    }
+
+    .icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .card h3 {
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .card p {
+      font-size: 12px;
+      color: #88889d;
+    }
+
+    footer {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #656578;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="tag">PERSONAL DASHBOARD</div>
+
+    <h1>NOVA<span>.</span></h1>
+    <p class="subtitle">A little space on the internet.</p>
+
+    <div class="clock" id="clock">Loading time...</div>
+
+    <div class="grid">
+      <a class="card" href="https://www.google.com">
+        <div class="icon">🔎</div>
+        <h3>Google</h3>
+        <p>Search the web</p>
+      </a>
+
+      <a class="card" href="https://www.youtube.com">
+        <div class="icon">▶️</div>
+        <h3>YouTube</h3>
+        <p>Videos</p>
+      </a>
+
+      <a class="card" href="https://www.wikipedia.org">
+        <div class="icon">📚</div>
+        <h3>Wikipedia</h3>
+        <p>Explore knowledge</p>
+      </a>
+
+      <a class="card" href="https://www.khanacademy.org">
+        <div class="icon">🎓</div>
+        <h3>Khan Academy</h3>
+        <p>Learn something</p>
+      </a>
+
+      <a class="card" href="https://github.com">
+        <div class="icon">💻</div>
+        <h3>GitHub</h3>
+        <p>Build projects</p>
+      </a>
+
+      <a class="card" href="https://www.coolmathgames.com">
+        <div class="icon">🎮</div>
+        <h3>Coolmath Games</h3>
+        <p>Games</p>
+      </a>
+    </div>
+
+    <footer>Made by you · Nova</footer>
+  </div>
+
+  <script>
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("clock").textContent =
+        now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
