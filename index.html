@@ -1,0 +1,421 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card Roguelike</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #17151e;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+header {
+  background: #292433;
+  padding: 20px;
+  color: #f5c95d;
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 25px;
+  flex-wrap: wrap;
+}
+
+.stat {
+  background: #302b3d;
+  padding: 15px 25px;
+  border-radius: 12px;
+  font-size: 18px;
+}
+
+#target { color: #ff7777; }
+#score { color: #77e6a0; }
+
+#message {
+  min-height: 30px;
+  color: #f5c95d;
+  margin: 15px;
+}
+
+.hand {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px;
+}
+
+.card {
+  width: 90px;
+  height: 130px;
+  background: #f5f1e8;
+  color: #222;
+  border-radius: 12px;
+  border: 3px solid white;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.15s;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+}
+
+.card.selected {
+  transform: translateY(-18px);
+  border-color: #f5c95d;
+  box-shadow: 0 0 15px #f5c95d55;
+}
+
+.red { color: #e33c51; }
+.black { color: #222; }
+
+.card .rank {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.card .suit {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+}
+
+.card .center {
+  font-size: 40px;
+  margin-top: 36px;
+}
+
+button.action {
+  background: #e8b94d;
+  color: #201b28;
+  border: none;
+  padding: 14px 25px;
+  border-radius: 10px;
+  margin: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button.action:hover {
+  background: #ffe080;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#log {
+  margin: 25px auto;
+  padding: 15px;
+  max-width: 500px;
+  background: #262230;
+  border-radius: 12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>♠ CARD ROGUELIKE ♥</header>
+
+<div class="stats">
+  <div class="stat">Round: <span id="round">1</span></div>
+  <div class="stat">Score: <span id="score">0</span></div>
+  <div class="stat">Target: <span id="target">300</span></div>
+  <div class="stat">Hands: <span id="hands">4</span></div>
+  <div class="stat">Discards: <span id="discards">3</span></div>
+</div>
+
+<div id="message">Select cards, then play your hand!</div>
+
+<div class="hand" id="hand"></div>
+
+<button class="action" id="playBtn" onclick="playHand()">PLAY HAND</button>
+<button class="action" id="discardBtn" onclick="discardCards()">DISCARD</button>
+<button class="action" onclick="restart()">RESTART</button>
+
+<div id="log">
+  <h3>Last Hand</h3>
+  <div id="lastHand">None</div>
+  <div id="lastScore">Score: 0</div>
+</div>
+
+<script>
+const suits = ["♠", "♥", "♦", "♣"];
+const ranks = [
+  "2","3","4","5","6","7","8","9","10","J","Q","K","A"
+];
+
+let deck = [];
+let hand = [];
+let selected = [];
+let score = 0;
+let target = 300;
+let round = 1;
+let hands = 4;
+let discards = 3;
+let gameOver = false;
+
+function createDeck() {
+  let cards = [];
+  for (let suit of suits) {
+    for (let rank of ranks) {
+      cards.push({rank, suit});
+    }
+  }
+  return cards;
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function drawCards(amount) {
+  while (hand.length < 8 && amount > 0 && deck.length > 0) {
+    hand.push(deck.pop());
+    amount--;
+  }
+}
+
+function startGame() {
+  deck = shuffle(createDeck());
+  hand = [];
+  selected = [];
+  score = 0;
+  target = 300;
+  round = 1;
+  hands = 4;
+  discards = 3;
+  gameOver = false;
+
+  drawCards(8);
+  render();
+}
+
+function cardValue(card) {
+  if (card.rank === "A") return 14;
+  if (card.rank === "K") return 13;
+  if (card.rank === "Q") return 12;
+  if (card.rank === "J") return 11;
+  return Number(card.rank);
+}
+
+function evaluate(cards) {
+  let values = cards.map(cardValue).sort((a,b) => a-b);
+  let counts = {};
+
+  values.forEach(v => counts[v] = (counts[v] || 0) + 1);
+
+  let groups = Object.values(counts).sort((a,b) => b-a);
+  let unique = [...new Set(values)];
+
+  let flush = cards.length >= 5 &&
+    cards.every(c => c.suit === cards[0].suit);
+
+  let straight = false;
+
+  if (unique.length === 5) {
+    straight = unique[4] - unique[0] === 4;
+
+    // Ace-low straight
+    if (unique.join(",") === "2,3,4,5,14") {
+      straight = true;
+    }
+  }
+
+  let name = "High Card";
+  let chips = 0;
+  let mult = 1;
+
+  if (groups[0] === 5) {
+    name = "Five of a Kind";
+    chips = 120;
+    mult = 12;
+  } else if (groups[0] === 4) {
+    name = "Four of a Kind";
+    chips = 80;
+    mult = 8;
+  } else if (groups[0] === 3 && groups[1] === 2) {
+    name = "Full House";
+    chips = 60;
+    mult = 6;
+  } else if (flush && straight) {
+    name = "Straight Flush";
+    chips = 100;
+    mult = 10;
+  } else if (flush) {
+    name = "Flush";
+    chips = 50;
+    mult = 5;
+  } else if (straight) {
+    name = "Straight";
+    chips = 45;
+    mult = 4;
+  } else if (groups[0] === 3) {
+    name = "Three of a Kind";
+    chips = 30;
+    mult = 3;
+  } else if (groups[0] === 2 && groups[1] === 2) {
+    name = "Two Pair";
+    chips = 20;
+    mult = 2;
+  } else if (groups[0] === 2) {
+    name = "Pair";
+    chips = 10;
+    mult = 2;
+  } else {
+    chips = Math.max(...values);
+    mult = 1;
+  }
+
+  // Add card values to chips
+  chips += values.reduce((a,b) => a+b, 0);
+
+  return {name, chips, mult};
+}
+
+function toggleCard(index) {
+  if (gameOver) return;
+
+  if (selected.includes(index)) {
+    selected = selected.filter(i => i !== index);
+  } else if (selected.length < 5) {
+    selected.push(index);
+  }
+
+  render();
+}
+
+function playHand() {
+  if (gameOver || selected.length === 0 || hands <= 0) return;
+
+  let played = selected.map(i => hand[i]);
+  let result = evaluate(played);
+  let gained = result.chips * result.mult;
+
+  score += gained;
+  hands--;
+
+  document.getElementById("lastHand").textContent =
+    result.name + " (" + played.map(c => c.rank + c.suit).join(" ") + ")";
+
+  document.getElementById("lastScore").textContent =
+    " +" + result.chips + " × " + result.mult + " = " + gained;
+
+  hand = hand.filter((c,i) => !selected.includes(i));
+  selected = [];
+
+  drawCards(8 - hand.length);
+
+  if (score >= target) {
+    nextRound();
+  } else if (hands <= 0) {
+    gameOver = true;
+    document.getElementById("message").textContent =
+      "Game Over! You missed the target.";
+  }
+
+  render();
+}
+
+function discardCards() {
+  if (gameOver || selected.length === 0 || discards <= 0) return;
+
+  hand = hand.filter((c,i) => !selected.includes(i));
+  discards--;
+  selected = [];
+
+  drawCards(8 - hand.length);
+  render();
+}
+
+function nextRound() {
+  round++;
+  target = Math.floor(target * 1.7);
+  hands = 4;
+  discards = 3;
+  score = 0;
+  deck = shuffle(createDeck());
+  hand = [];
+  selected = [];
+
+  drawCards(8);
+
+  document.getElementById("message").textContent =
+    "Round cleared! The next target is " + target;
+}
+
+function restart() {
+  document.getElementById("message").textContent =
+    "New game started!";
+  startGame();
+}
+
+function render() {
+  let container = document.getElementById("hand");
+  container.innerHTML = "";
+
+  hand.forEach((card, i) => {
+    let div = document.createElement("div");
+    let red = card.suit === "♥" || card.suit === "♦";
+
+    div.className = "card " +
+      (red ? "red" : "black") +
+      (selected.includes(i) ? " selected" : "");
+
+    div.innerHTML = `
+      <span class="rank">${card.rank}</span>
+      <div class="center">${card.suit}</div>
+      <span class="suit">${card.suit}</span>
+    `;
+
+    div.onclick = () => toggleCard(i);
+    container.appendChild(div);
+  });
+
+  document.getElementById("round").textContent = round;
+  document.getElementById("score").textContent = score;
+  document.getElementById("target").textContent = target;
+  document.getElementById("hands").textContent = hands;
+  document.getElementById("discards").textContent = discards;
+
+  document.getElementById("playBtn").disabled =
+    selected.length === 0 || gameOver;
+
+  document.getElementById("discardBtn").disabled =
+    selected.length === 0 || discards <= 0 || gameOver;
+
+  if (!gameOver && score < target) {
+    document.getElementById("message").textContent =
+      "Select up to 5 cards to play.";
+  }
+}
+
+startGame();
+</script>
+
+</body>
+</html>
